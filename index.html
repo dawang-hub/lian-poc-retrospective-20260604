@@ -1705,19 +1705,27 @@
   </div>
   <script>
     (() => {
+      const storageConfig = {
+        pageId: "lian-poc-retrospective-20260604",
+        functionUrl: "https://icyzbjgruhrjgpgrylkh.functions.supabase.co/retrospective-files"
+      };
       const docExtensions = new Set(["doc", "docx", "xls", "xlsx", "csv", "pdf", "md", "markdown"]);
       const imageExtensions = new Set(["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "heic", "heif"]);
       const objectUrls = [];
+      const uploadBoxes = new Map();
       const previewLayer = document.querySelector("#file-preview");
       const previewTitle = document.querySelector("#preview-title");
       const previewOpen = document.querySelector("#preview-open");
       const previewBody = document.querySelector("#preview-body");
       const previewClose = document.querySelector("#preview-close");
+      const isRemoteStorageEnabled = Boolean(storageConfig.functionUrl) && !storageConfig.functionUrl.includes("YOUR_PROJECT_REF");
 
-      const getExtension = (file) => {
-        const parts = file.name.toLowerCase().split(".");
+      const getExtensionFromName = (name) => {
+        const parts = name.toLowerCase().split(".");
         return parts.length > 1 ? parts.pop() : "";
       };
+
+      const getExtension = (file) => getExtensionFromName(file.name);
 
       const formatSize = (bytes) => {
         if (bytes < 1024 * 1024) {
@@ -1731,41 +1739,115 @@
         return chars.length > maxLength ? `${chars.slice(0, maxLength).join("")}...` : name;
       };
 
-      const createUrl = (file) => {
+      const getStepId = (input) => {
+        if (input.id === "upload-actions") {
+          return "actions";
+        }
+        return input.id.replace("upload-step-", "step-");
+      };
+
+      const isValidFile = (file, type) => {
+        const extension = getExtension(file);
+        if (type === "doc") {
+          return docExtensions.has(extension);
+        }
+        return file.type.startsWith("image/") || imageExtensions.has(extension);
+      };
+
+      const createLocalRecord = (file, stepId, type) => {
         const extension = getExtension(file);
         const source = extension === "md" || extension === "markdown"
           ? new Blob([file], { type: "text/plain" })
           : file;
         const url = URL.createObjectURL(source);
         objectUrls.push(url);
-        return url;
+        return {
+          id: `${stepId}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          name: file.name,
+          size: file.size,
+          mimeType: file.type || "application/octet-stream",
+          stepId,
+          type,
+          url,
+          downloadUrl: url,
+          sourceFile: file,
+          isRemote: false
+        };
       };
 
-      const showPreview = (file, url) => {
-        const extension = getExtension(file);
-        previewTitle.textContent = file.name;
+      const normalizeRemoteFile = (file) => ({
+        id: file.id || file.path,
+        name: file.name,
+        size: file.size || 0,
+        mimeType: file.mimeType || file.mimetype || "application/octet-stream",
+        stepId: file.stepId,
+        type: file.type,
+        path: file.path,
+        url: file.url || file.signedUrl || file.downloadUrl,
+        downloadUrl: file.downloadUrl || file.url || file.signedUrl,
+        isRemote: true
+      });
+
+      const getUploadPassword = () => {
+        const saved = sessionStorage.getItem("retrospectiveUploadPassword") || "";
+        const password = window.prompt("请输入上传密码", saved);
+        if (!password) {
+          return "";
+        }
+        sessionStorage.setItem("retrospectiveUploadPassword", password);
+        return password;
+      };
+
+      const clearUploadPassword = () => {
+        sessionStorage.removeItem("retrospectiveUploadPassword");
+      };
+
+      const setBoxBusy = (box, busy) => {
+        const button = box.querySelector(".upload-button");
+        if (!button) {
+          return;
+        }
+        button.style.opacity = busy ? "0.58" : "";
+        button.style.pointerEvents = busy ? "none" : "";
+      };
+
+      const showPreview = async (fileRecord) => {
+        const extension = getExtensionFromName(fileRecord.name);
+        const url = fileRecord.url;
+        previewTitle.textContent = fileRecord.name;
         previewOpen.href = url;
+        previewOpen.setAttribute("download", fileRecord.name);
         previewBody.replaceChildren();
 
-        if (file.type.startsWith("image/") || imageExtensions.has(extension)) {
+        if ((fileRecord.mimeType || "").startsWith("image/") || imageExtensions.has(extension)) {
           const image = document.createElement("img");
           image.src = url;
-          image.alt = file.name;
+          image.alt = fileRecord.name;
           previewBody.append(image);
-        } else if (extension === "md" || extension === "markdown" || extension === "csv" || file.type.startsWith("text/")) {
-          const reader = new FileReader();
+        } else if (extension === "md" || extension === "markdown" || extension === "csv" || (fileRecord.mimeType || "").startsWith("text/")) {
           const textPreview = document.createElement("pre");
           textPreview.className = "preview-text";
           textPreview.textContent = "正在读取文件...";
           previewBody.append(textPreview);
-          reader.addEventListener("load", () => {
-            textPreview.textContent = reader.result || "";
-          });
-          reader.readAsText(file);
+
+          if (fileRecord.sourceFile) {
+            const reader = new FileReader();
+            reader.addEventListener("load", () => {
+              textPreview.textContent = reader.result || "";
+            });
+            reader.readAsText(fileRecord.sourceFile);
+          } else {
+            try {
+              const response = await fetch(url);
+              textPreview.textContent = await response.text();
+            } catch (error) {
+              textPreview.textContent = "文件预览失败，请使用“新窗口打开”下载查看。";
+            }
+          }
         } else {
           const frame = document.createElement("iframe");
           frame.src = url;
-          frame.title = file.name;
+          frame.title = fileRecord.name;
           previewBody.append(frame);
         }
 
@@ -1777,111 +1859,192 @@
         previewBody.replaceChildren();
       };
 
-      const deleteUpload = (item, url) => {
-        if (!previewLayer.hidden && previewOpen.href === url) {
+      const deleteUpload = async (item, fileRecord) => {
+        if (!previewLayer.hidden && previewOpen.href === fileRecord.url) {
           hidePreview();
         }
-        URL.revokeObjectURL(url);
+
+        if (fileRecord.isRemote) {
+          const password = getUploadPassword();
+          if (!password) {
+            return;
+          }
+
+          const response = await fetch(storageConfig.functionUrl, {
+            method: "DELETE",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              password,
+              pageId: storageConfig.pageId,
+              path: fileRecord.path
+            })
+          });
+
+          if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              clearUploadPassword();
+            }
+            alert("删除失败，请检查上传密码或稍后重试。");
+            return;
+          }
+        } else {
+          URL.revokeObjectURL(fileRecord.url);
+        }
+
         item.remove();
       };
 
-      const createDeleteButton = (item, file, url, label = "×") => {
+      const createDeleteButton = (item, fileRecord, label = "×") => {
         const button = document.createElement("button");
         button.className = "delete-upload";
         button.type = "button";
         button.textContent = label;
-        button.setAttribute("aria-label", `删除 ${file.name}`);
+        button.setAttribute("aria-label", `删除 ${fileRecord.name}`);
         button.addEventListener("click", (event) => {
           event.preventDefault();
           event.stopPropagation();
-          const shouldDelete = window.confirm(`确认删除“${file.name}”吗？`);
+          const shouldDelete = window.confirm(`确认删除“${fileRecord.name}”吗？`);
           if (!shouldDelete) {
             return;
           }
-          deleteUpload(item, url);
+          deleteUpload(item, fileRecord);
         });
         return button;
       };
 
-      const appendDocument = (list, file) => {
+      const renderDocument = (list, fileRecord) => {
         const item = document.createElement("li");
         const link = document.createElement("a");
         const name = document.createElement("span");
         const meta = document.createElement("span");
-        const url = createUrl(file);
-        const deleteButton = createDeleteButton(item, file, url);
+        const deleteButton = createDeleteButton(item, fileRecord);
 
         item.className = "upload-item";
         link.className = "upload-link";
-        link.href = url;
+        link.href = fileRecord.url;
         link.target = "_blank";
         link.rel = "noreferrer";
-        link.title = `点击预览 ${file.name}`;
+        link.title = `点击预览 ${fileRecord.name}`;
         link.addEventListener("click", (event) => {
           event.preventDefault();
-          showPreview(file, url);
+          showPreview(fileRecord);
         });
 
         name.className = "file-name";
-        name.textContent = truncateName(file.name);
-        name.title = file.name;
+        name.textContent = truncateName(fileRecord.name);
+        name.title = fileRecord.name;
         meta.className = "file-meta";
-        meta.textContent = formatSize(file.size);
+        meta.textContent = formatSize(fileRecord.size);
 
         link.append(name, meta);
         item.append(link, deleteButton);
         list.append(item);
       };
 
-      const appendPhoto = (list, file) => {
+      const renderPhoto = (list, fileRecord) => {
         const item = document.createElement("li");
         const link = document.createElement("a");
         const image = document.createElement("img");
         const name = document.createElement("span");
-        const url = createUrl(file);
-        const deleteButton = createDeleteButton(item, file, url, "×");
+        const deleteButton = createDeleteButton(item, fileRecord, "×");
 
         item.className = "upload-item";
         link.className = "photo-card";
-        link.href = url;
+        link.href = fileRecord.url;
         link.target = "_blank";
         link.rel = "noreferrer";
-        link.title = `点击预览 ${file.name}`;
+        link.title = `点击预览 ${fileRecord.name}`;
         link.addEventListener("click", (event) => {
           event.preventDefault();
-          showPreview(file, url);
+          showPreview(fileRecord);
         });
-        image.src = url;
-        image.alt = file.name;
-        name.textContent = truncateName(file.name);
-        name.title = file.name;
+        image.src = fileRecord.url;
+        image.alt = fileRecord.name;
+        name.textContent = truncateName(fileRecord.name);
+        name.title = fileRecord.name;
 
         link.append(image, name);
         item.append(link, deleteButton);
         list.append(item);
       };
 
+      const renderFile = (fileRecord) => {
+        const box = uploadBoxes.get(fileRecord.stepId);
+        if (!box) {
+          return;
+        }
+
+        const list = box.querySelector(".upload-list");
+        if (fileRecord.type === "photo") {
+          renderPhoto(list, fileRecord);
+        } else {
+          renderDocument(list, fileRecord);
+        }
+      };
+
+      const loadRemoteFiles = async () => {
+        if (!isRemoteStorageEnabled) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${storageConfig.functionUrl}?pageId=${encodeURIComponent(storageConfig.pageId)}`);
+          if (!response.ok) {
+            throw new Error("list failed");
+          }
+          const data = await response.json();
+          document.querySelectorAll(".upload-list").forEach((list) => list.replaceChildren());
+          (data.files || []).map(normalizeRemoteFile).forEach(renderFile);
+        } catch (error) {
+          console.error(error);
+          alert("服务器文件列表读取失败，请稍后刷新页面。");
+        }
+      };
+
+      const uploadRemoteFile = async (box, file, stepId, type, password) => {
+        const formData = new FormData();
+        formData.append("password", password);
+        formData.append("pageId", storageConfig.pageId);
+        formData.append("stepId", stepId);
+        formData.append("type", type);
+        formData.append("file", file);
+
+        const response = await fetch(storageConfig.functionUrl, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            clearUploadPassword();
+          }
+          throw new Error("upload failed");
+        }
+
+        const data = await response.json();
+        renderFile(normalizeRemoteFile(data.file));
+      };
+
       document.querySelectorAll(".upload-box").forEach((box) => {
         const input = box.querySelector("input[type='file']");
         const list = box.querySelector(".upload-list");
         const type = box.dataset.uploadBox;
+        const stepId = getStepId(input);
+        uploadBoxes.set(stepId, box);
 
-        input.addEventListener("change", () => {
+        if (!isRemoteStorageEnabled) {
+          const hint = box.querySelector(".upload-hint");
+          hint.textContent = `${hint.textContent}（服务器未配置，当前仅本地临时预览）`;
+        }
+
+        input.addEventListener("change", async () => {
           const files = Array.from(input.files || []);
           const invalidFiles = [];
+          const validFiles = [];
 
           files.forEach((file) => {
-            const extension = getExtension(file);
-            const isValidDoc = type === "doc" && docExtensions.has(extension);
-            const isValidPhoto = type === "photo" && (file.type.startsWith("image/") || imageExtensions.has(extension));
-
-            if (isValidDoc) {
-              appendDocument(list, file);
-              return;
-            }
-
-            if (isValidPhoto) {
-              appendPhoto(list, file);
+            if (isValidFile(file, type)) {
+              validFiles.push(file);
               return;
             }
 
@@ -1890,6 +2053,35 @@
 
           if (invalidFiles.length) {
             alert(`以下文件格式暂不支持：\n${invalidFiles.join("\n")}`);
+          }
+
+          if (validFiles.length && isRemoteStorageEnabled) {
+            const password = getUploadPassword();
+            if (!password) {
+              input.value = "";
+              return;
+            }
+
+            setBoxBusy(box, true);
+            try {
+              for (const file of validFiles) {
+                await uploadRemoteFile(box, file, stepId, type, password);
+              }
+            } catch (error) {
+              console.error(error);
+              alert("上传失败，请检查上传密码或稍后重试。");
+            } finally {
+              setBoxBusy(box, false);
+            }
+          } else {
+            validFiles.forEach((file) => {
+              const fileRecord = createLocalRecord(file, stepId, type);
+              if (type === "photo") {
+                renderPhoto(list, fileRecord);
+              } else {
+                renderDocument(list, fileRecord);
+              }
+            });
           }
 
           input.value = "";
@@ -1918,6 +2110,8 @@
       window.addEventListener("beforeunload", () => {
         objectUrls.forEach((url) => URL.revokeObjectURL(url));
       });
+
+      loadRemoteFiles();
     })();
   </script>
 </body>
