@@ -1790,16 +1790,52 @@
 
       const getUploadPassword = () => {
         const saved = sessionStorage.getItem("retrospectiveUploadPassword") || "";
-        const password = window.prompt("请输入上传密码", saved);
-        if (!password) {
+        const password = window.prompt("请输入上传密码（不是 Supabase API Key）", saved);
+        if (password === null) {
           return "";
         }
-        sessionStorage.setItem("retrospectiveUploadPassword", password);
-        return password;
+        const normalizedPassword = password.trim();
+        if (!normalizedPassword) {
+          return "";
+        }
+        if (/^sb_(publishable|secret)_/i.test(normalizedPassword)) {
+          clearUploadPassword();
+          alert("这里请填写上传密码，不要填写 Supabase API Key。");
+          return "";
+        }
+        sessionStorage.setItem("retrospectiveUploadPassword", normalizedPassword);
+        return normalizedPassword;
       };
 
       const clearUploadPassword = () => {
         sessionStorage.removeItem("retrospectiveUploadPassword");
+      };
+
+      const getRemoteErrorMessage = async (response, action) => {
+        let detail = "";
+        try {
+          const data = await response.json();
+          detail = data?.error || "";
+        } catch (error) {
+          detail = "";
+        }
+
+        if (response.status === 401 || response.status === 403) {
+          return `${action}密码不正确，请重新输入上传密码。`;
+        }
+        if (response.status === 413) {
+          return "文件超过 30MB，请压缩后再上传。";
+        }
+        if (response.status === 415) {
+          return "文件格式不支持，请上传 Word、Excel、PDF、MD 或图片。";
+        }
+        if (response.status === 400) {
+          return `${action}目标异常，请刷新页面后重试。`;
+        }
+        if (response.status >= 500) {
+          return "服务器暂时出错，请稍后再试。";
+        }
+        return detail ? `${action}失败：${detail}` : `${action}失败，请稍后重试。`;
       };
 
       const setBoxBusy = (box, busy) => {
@@ -1884,7 +1920,7 @@
             if (response.status === 401 || response.status === 403) {
               clearUploadPassword();
             }
-            alert("删除失败，请检查上传密码或稍后重试。");
+            alert(await getRemoteErrorMessage(response, "删除"));
             return;
           }
         } else {
@@ -2018,7 +2054,7 @@
           if (response.status === 401 || response.status === 403) {
             clearUploadPassword();
           }
-          throw new Error("upload failed");
+          throw new Error(await getRemoteErrorMessage(response, "上传"));
         }
 
         const data = await response.json();
@@ -2069,7 +2105,7 @@
               }
             } catch (error) {
               console.error(error);
-              alert("上传失败，请检查上传密码或稍后重试。");
+              alert(error?.message || "上传失败，请稍后重试。");
             } finally {
               setBoxBusy(box, false);
             }
