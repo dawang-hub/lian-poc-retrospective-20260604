@@ -1,0 +1,1924 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>项目复盘流程 - 利安人寿 POC</title>
+  <style>
+    :root {
+      --bg: #f5f6f3;
+      --paper: #ffffff;
+      --ink: #17212b;
+      --muted: #5f6974;
+      --line: #d9ded8;
+      --teal: #126d6a;
+      --teal-soft: #dff0ed;
+      --blue: #2d5f9a;
+      --blue-soft: #e3edf8;
+      --amber: #b88318;
+      --amber-soft: #fff1cf;
+      --red: #af4f45;
+      --red-soft: #f8dfdc;
+      --violet: #6352a5;
+      --violet-soft: #e9e5f6;
+      --shadow: 0 18px 45px rgba(23, 33, 43, 0.08);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.65;
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(45, 95, 154, 0.35);
+    }
+
+    a:hover {
+      border-color: currentColor;
+    }
+
+    .shell {
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(245, 246, 243, 0.92);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .topbar-inner {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 13px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 220px;
+      font-weight: 700;
+      color: #1d2b35;
+      letter-spacing: 0;
+    }
+
+    .nav {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 11px;
+      color: var(--muted);
+      border: 0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .nav a:hover {
+      background: rgba(23, 33, 43, 0.06);
+      color: var(--ink);
+    }
+
+    .hero {
+      background:
+        linear-gradient(90deg, rgba(18, 109, 106, 0.08), rgba(255, 255, 255, 0) 40%),
+        linear-gradient(180deg, #ffffff 0%, #f5f6f3 100%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-inner {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      gap: 44px;
+      padding: 54px 0 38px;
+      align-items: end;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      color: var(--teal);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 2px;
+      background: var(--teal);
+      border-radius: 999px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 760px;
+      margin-bottom: 18px;
+      font-size: clamp(36px, 5vw, 64px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 780px;
+      margin-bottom: 26px;
+      color: #394651;
+      font-size: 19px;
+    }
+
+    .principles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .principles li {
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      color: #30404c;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .meeting-panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .meeting-panel-header {
+      padding: 20px 22px;
+      background: #1f2b35;
+      color: #fff;
+    }
+
+    .meeting-panel-header p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 14px;
+    }
+
+    .meeting-time {
+      margin-bottom: 5px;
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .meeting-facts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .meeting-fact {
+      min-height: 98px;
+      padding: 18px 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    .meeting-fact:nth-child(odd) {
+      border-right: 1px solid var(--line);
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .value {
+      display: block;
+      color: var(--ink);
+      font-size: 17px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    section {
+      padding: 56px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    section:nth-of-type(even) {
+      background: rgba(255, 255, 255, 0.44);
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.7fr) minmax(320px, 1fr);
+      gap: 40px;
+      margin-bottom: 30px;
+      align-items: start;
+    }
+
+    .section-head-single {
+      grid-template-columns: minmax(0, 760px);
+    }
+
+    h2 {
+      margin-bottom: 10px;
+      font-size: clamp(26px, 3vw, 38px);
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+
+    .section-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric {
+      min-height: 164px;
+      padding: 18px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .metric p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .accent-teal {
+      border-top: 4px solid var(--teal);
+    }
+
+    .accent-blue {
+      border-top: 4px solid var(--blue);
+    }
+
+    .accent-amber {
+      border-top: 4px solid var(--amber);
+    }
+
+    .accent-red {
+      border-top: 4px solid var(--red);
+    }
+
+    .phase-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .phase {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .phase-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 18px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .phase-title h3 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.3;
+    }
+
+    .phase-window {
+      flex: 0 0 auto;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      background: #33424d;
+    }
+
+    .phase ul,
+    .checklist,
+    .link-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .phase li {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .phase li:last-child {
+      border-bottom: 0;
+    }
+
+    .step-no {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      background: var(--teal);
+    }
+
+    .step-copy strong {
+      display: block;
+      margin-bottom: 4px;
+      line-height: 1.35;
+    }
+
+    .step-copy span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .upload-box {
+      margin-top: 22px;
+    }
+
+    .upload-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
+    }
+
+    .upload-button {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid rgba(18, 109, 106, 0.36);
+      border-radius: 8px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .upload-button:hover {
+      border-color: var(--teal);
+      background: #d4ebe7;
+    }
+
+    .upload-hint {
+      display: block;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .upload-list {
+      display: grid;
+      gap: 12px;
+      margin: 32px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .upload-list:empty {
+      display: none;
+    }
+
+    .upload-list li {
+      display: block;
+      padding: 0;
+      border: 0;
+    }
+
+    .upload-item {
+      position: relative;
+      display: block;
+      width: 100%;
+    }
+
+    .upload-link {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+      min-height: 42px;
+      padding: 9px 48px 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fafbf9;
+      color: #263846;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .upload-link:hover {
+      border-color: rgba(45, 95, 154, 0.42);
+      background: #f5f8fb;
+    }
+
+    .delete-upload {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 50%;
+      right: 9px;
+      width: 30px;
+      min-width: 30px;
+      height: 30px;
+      min-height: 30px;
+      padding: 0;
+      border: 1px solid rgba(175, 79, 69, 0.26);
+      border-radius: 50%;
+      color: var(--red);
+      background: #fff7f6;
+      font: inherit;
+      font-size: 18px;
+      font-weight: 850;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-50%) scale(0.94);
+      transition: opacity 0.16s ease, transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+    }
+
+    .delete-upload:hover {
+      border-color: rgba(175, 79, 69, 0.54);
+      background: var(--red-soft);
+    }
+
+    .upload-item:hover .delete-upload,
+    .upload-item:focus-within .delete-upload {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(-50%) scale(1);
+    }
+
+    .file-name {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+      color: #263846;
+      font-size: 13px;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .file-meta {
+      display: block;
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .photo-list {
+      grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+      gap: 10px;
+    }
+
+    .photo-list li {
+      min-width: 0;
+    }
+
+    .photo-list .upload-item {
+      position: relative;
+      display: block;
+    }
+
+    .photo-card {
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fafbf9;
+    }
+
+    .photo-card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      background: #eef2ee;
+    }
+
+    .photo-card span {
+      display: block;
+      padding: 6px 7px;
+      overflow: hidden;
+      color: #263846;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .photo-list .delete-upload {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      min-width: 28px;
+      width: 28px;
+      min-height: 28px;
+      height: 28px;
+      padding: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 6px 16px rgba(23, 33, 43, 0.16);
+      transform: scale(0.94);
+    }
+
+    .photo-list .upload-item:hover .delete-upload,
+    .photo-list .upload-item:focus-within .delete-upload {
+      transform: scale(1);
+    }
+
+    .preview-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      background: rgba(23, 33, 43, 0.42);
+    }
+
+    .preview-layer[hidden] {
+      display: none;
+    }
+
+    .preview-dialog {
+      width: min(1040px, 100%);
+      height: min(760px, calc(100vh - 56px));
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 24px 70px rgba(23, 33, 43, 0.24);
+    }
+
+    .preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .preview-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 850;
+    }
+
+    .preview-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 0 0 auto;
+    }
+
+    .preview-open {
+      color: var(--blue);
+      border-bottom: 1px solid rgba(45, 95, 154, 0.35);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .preview-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: #263846;
+      background: #fafbf9;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .preview-body {
+      min-height: 0;
+      background: #f4f6f4;
+    }
+
+    .preview-body iframe,
+    .preview-body object {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #fff;
+    }
+
+    .preview-body img {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      margin: auto;
+      object-fit: contain;
+    }
+
+    .preview-text {
+      height: 100%;
+      margin: 0;
+      padding: 24px;
+      overflow: auto;
+      color: #17212b;
+      background: #fff;
+      font: 14px/1.7 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      white-space: pre-wrap;
+    }
+
+    .preview-empty {
+      display: grid;
+      place-items: center;
+      height: 100%;
+      padding: 28px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .agenda {
+      display: grid;
+      gap: 10px;
+    }
+
+    .agenda-row {
+      display: grid;
+      grid-template-columns: 140px minmax(0, 1fr) 120px;
+      gap: 18px;
+      align-items: center;
+      padding: 15px 18px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .agenda-time {
+      color: var(--teal);
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .agenda-topic strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .agenda-topic span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .agenda-owner {
+      justify-self: end;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #3b4650;
+      font-size: 13px;
+      font-weight: 700;
+      background: #fafbf9;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .method-block {
+      padding: 22px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .method-block h3 {
+      margin-bottom: 14px;
+      font-size: 21px;
+    }
+
+    .checklist li,
+    .link-list li {
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr);
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .checklist li:last-child,
+    .link-list li:last-child {
+      border-bottom: 0;
+    }
+
+    .interactive-checklist li {
+      display: block;
+      padding: 0;
+    }
+
+    .task-label {
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr);
+      gap: 10px;
+      padding: 10px 0;
+      cursor: pointer;
+    }
+
+    .task-checkbox {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
+    }
+
+    .task-box {
+      position: relative;
+      width: 18px;
+      height: 18px;
+      margin-top: 4px;
+      border: 2px solid var(--teal);
+      border-radius: 4px;
+      background: var(--teal-soft);
+      transition: background 0.16s ease, border-color 0.16s ease;
+    }
+
+    .task-box::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 5px;
+      height: 10px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      opacity: 0;
+      transform: rotate(45deg);
+    }
+
+    .task-checkbox:checked + .task-box {
+      border-color: var(--teal);
+      background: var(--teal);
+    }
+
+    .task-checkbox:checked + .task-box::after {
+      opacity: 1;
+    }
+
+    .task-checkbox:checked ~ .task-text {
+      color: var(--muted);
+      text-decoration: line-through;
+      text-decoration-thickness: 1.5px;
+    }
+
+    .task-checkbox:focus-visible + .task-box {
+      outline: 3px solid rgba(18, 109, 106, 0.18);
+      outline-offset: 2px;
+    }
+
+    .box {
+      width: 18px;
+      height: 18px;
+      margin-top: 4px;
+      border: 2px solid var(--teal);
+      border-radius: 4px;
+      background: var(--teal-soft);
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      margin-top: 8px;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+
+    .sticky-flow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .sticky {
+      min-height: 140px;
+      padding: 16px;
+      border: 1px solid rgba(23, 33, 43, 0.12);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 20px rgba(23, 33, 43, 0.05);
+    }
+
+    .sticky.red {
+      background: var(--red-soft);
+    }
+
+    .sticky.yellow {
+      background: var(--amber-soft);
+    }
+
+    .sticky.blue {
+      background: var(--blue-soft);
+    }
+
+    .sticky strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 17px;
+    }
+
+    .sticky p {
+      margin: 0;
+      color: #3f4a55;
+      font-size: 14px;
+    }
+
+    .discussion-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .discussion {
+      padding: 20px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .discussion h3 {
+      margin-bottom: 10px;
+      font-size: 19px;
+    }
+
+    .discussion p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    table {
+      width: 100%;
+      min-width: 980px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      color: #273744;
+      background: #eef2ee;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .status {
+      display: inline-flex;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status.todo {
+      background: var(--amber-soft);
+      color: #76520c;
+    }
+
+    .status.open {
+      background: var(--teal-soft);
+      color: #0d5855;
+    }
+
+    .action-upload {
+      margin: 0 0 18px;
+      padding: 18px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .status-select {
+      width: 96px;
+      min-height: 34px;
+      padding: 5px 28px 5px 10px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      color: #76520c;
+      background: var(--amber-soft);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .status-select[data-state="待执行"] {
+      color: #76520c;
+      background: var(--amber-soft);
+    }
+
+    .status-select[data-state="待确认"] {
+      color: #2d5f9a;
+      background: var(--blue-soft);
+    }
+
+    .status-select[data-state="待归档"] {
+      color: #0d5855;
+      background: var(--teal-soft);
+    }
+
+    .resource-band {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: 24px;
+      align-items: start;
+      padding: 26px;
+      background: #1f2b35;
+      border-radius: var(--radius);
+      color: #fff;
+    }
+
+    .resource-band h2 {
+      margin-bottom: 8px;
+    }
+
+    .resource-band p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.74);
+    }
+
+    .resource-band .link-list li {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .resource-band a {
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.35);
+      font-weight: 700;
+    }
+
+    .resource-band .dot {
+      background: var(--amber);
+    }
+
+    .footer {
+      padding: 24px 0 42px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .hero-inner,
+      .section-head,
+      .phase-board,
+      .two-col,
+      .discussion-grid,
+      .resource-band {
+        grid-template-columns: 1fr;
+      }
+
+      .analysis-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .agenda-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .agenda-owner {
+        justify-self: start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .brand {
+        min-width: 0;
+      }
+
+      .hero-inner {
+        padding-top: 38px;
+      }
+
+      .meeting-facts,
+      .analysis-grid,
+      .sticky-flow {
+        grid-template-columns: 1fr;
+      }
+
+      .meeting-fact:nth-child(odd) {
+        border-right: 0;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .topbar {
+        position: static;
+      }
+
+      .nav {
+        display: none;
+      }
+
+      section,
+      .hero {
+        break-inside: avoid;
+      }
+
+      .meeting-panel,
+      .metric,
+      .phase,
+      .method-block,
+      .discussion,
+      .table-wrap,
+      .resource-band {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span>利安人寿 POC 复盘</span>
+        </div>
+        <nav class="nav" aria-label="页面导航">
+          <a href="#analysis">流程分析</a>
+          <a href="#stages">三阶段流程</a>
+          <a href="#agenda">会议议程</a>
+          <a href="#method">现场方法</a>
+          <a href="#actions">行动追踪</a>
+          <a href="#resources">资料链接</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="hero">
+        <div class="hero-inner">
+          <div>
+            <p class="eyebrow">项目复盘流程分析版</p>
+            <h1>利安人寿 POC 项目复盘工作台</h1>
+            <p class="lead">本次复盘的核心不是追责，而是把项目中的事实、关键瞬间与团队经验转化为下一次可复用的流程资产。</p>
+            <ul class="principles" aria-label="复盘原则">
+              <li>数据说话</li>
+              <li>情境重现</li>
+              <li>结论可执行</li>
+              <li>沉淀可复用</li>
+            </ul>
+          </div>
+
+          <aside class="meeting-panel" aria-label="会议信息">
+            <div class="meeting-panel-header">
+              <div class="meeting-time">2026.06.05 周五 17:00</div>
+              <p>建议控制在 60-90 分钟。</p>
+            </div>
+            <div class="meeting-facts">
+              <div class="meeting-fact">
+                <span class="label">地点</span>
+                <span class="value">艮山会议室</span>
+              </div>
+              <div class="meeting-fact">
+                <span class="label">主持</span>
+                <span class="value">冯梦莹</span>
+              </div>
+              <div class="meeting-fact">
+                <span class="label">参与人</span>
+                <span class="value">杜妍、房昱锟、覃彦涛</span>
+              </div>
+              <div class="meeting-fact">
+                <span class="label">关键产出</span>
+                <span class="value">复盘报告、行动项追踪表、知识资产链接</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <section id="analysis">
+        <div class="container">
+          <div class="section-head section-head-single">
+            <div>
+              <h2>流程分析</h2>
+              <p class="section-note">围绕事实、情境、根因与行动四个环节搭建分析框架：会前聚焦数据与问卷准备，会中聚焦共识与原因分析，会后聚焦行动追踪与知识沉淀，帮助团队把项目关键经验转化为可复用的方法。</p>
+            </div>
+          </div>
+
+          <div class="analysis-grid" aria-label="复盘结构分析">
+            <article class="metric accent-teal">
+              <strong>定位清晰</strong>
+              <p>“流程优化会”和“知识沉淀会”的定位正确，能降低防御心理，提升团队开放度。</p>
+            </article>
+            <article class="metric accent-blue">
+              <strong>输入充分</strong>
+              <p>工时、进度、问卷、关键事件是讨论的输入，建议会前统一整理成一页信息看板。</p>
+            </article>
+            <article class="metric accent-amber">
+              <strong>现场有抓手</strong>
+              <p>时间轴加便利贴能让沉默信息浮出水面，比单纯轮流发言更容易抓到真实卡点。</p>
+            </article>
+            <article class="metric accent-red">
+              <strong>闭环要压实</strong>
+              <p>行动项必须落到 What、Who、When、How，并进入后续追踪表，避免“复盘完就结束”。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="stages">
+        <div class="container">
+          <div class="section-head section-head-single">
+            <div>
+              <h2>三阶段流程</h2>
+              <p class="section-note">按会前、会中、会后三段推进，保证讨论从事实出发，最后回到可执行改进。</p>
+            </div>
+          </div>
+
+          <div class="phase-board">
+            <article class="phase">
+              <div class="phase-title">
+                <h3>第一阶段：会前准备</h3>
+                <span class="phase-window">会前完成</span>
+              </div>
+              <ul>
+                <li>
+                  <span class="step-no">1</span>
+                  <div class="step-copy">
+                    <strong>整体情况与核心数据梳理</strong>
+                    <span>回顾项目范围、时间、预算、质量目标；整理工时投入和里程碑偏差。</span>
+                    <div class="upload-box" data-upload-box="doc">
+                      <input class="upload-input" id="upload-step-1" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.csv,.pdf,.md,.markdown,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,text/markdown,text/plain">
+                      <label class="upload-button" for="upload-step-1">上传文档</label>
+                      <span class="upload-hint">支持多份 Word / Excel / PDF / MD</span>
+                      <ul class="upload-list" aria-label="第 1 项上传文档"></ul>
+                    </div>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-no">2</span>
+                  <div class="step-copy">
+                    <strong>设计复盘问卷</strong>
+                    <span>让成员提前思考亮点、痛点、建议，减少现场冷场和发散。</span>
+                    <div class="upload-box" data-upload-box="doc">
+                      <input class="upload-input" id="upload-step-2" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.csv,.pdf,.md,.markdown,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,text/markdown,text/plain">
+                      <label class="upload-button" for="upload-step-2">上传文档</label>
+                      <span class="upload-hint">支持多份 Word / Excel / PDF / MD</span>
+                      <ul class="upload-list" aria-label="第 2 项上传文档"></ul>
+                    </div>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-no">3</span>
+                  <div class="step-copy">
+                    <strong>整理问卷信息看板</strong>
+                    <span>按亮点、痛点、建议分类汇总，作为会议讨论的共同输入。</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-no">4</span>
+                  <div class="step-copy">
+                    <strong>确认时间、地点和议程</strong>
+                    <span>提前同步 6 月 5 日 17:00、艮山会议室、会议时长与产出要求。</span>
+                  </div>
+                </li>
+              </ul>
+            </article>
+
+            <article class="phase">
+              <div class="phase-title">
+                <h3>第二阶段：复盘会议</h3>
+                <span class="phase-window">60-90 分钟</span>
+              </div>
+              <ul>
+                <li>
+                  <span class="step-no">5</span>
+                  <div class="step-copy">
+                    <strong>会议开场</strong>
+                    <span>PM 重申复盘目的：不追责，聚焦流程优化和知识沉淀。</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-no">6</span>
+                  <div class="step-copy">
+                    <strong>事实回顾</strong>
+                    <span>展示项目数据和问卷看板，让所有人先对客观事实形成统一认知。</span>
+                    <div class="upload-box" data-upload-box="doc">
+                      <input class="upload-input" id="upload-step-6" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.csv,.pdf,.md,.markdown,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,text/markdown,text/plain">
+                      <label class="upload-button" for="upload-step-6">上传文档</label>
+                      <span class="upload-hint">支持多份 Word / Excel / PDF / MD</span>
+                      <ul class="upload-list" aria-label="第 6 项上传文档"></ul>
+                    </div>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-no">7</span>
+                  <div class="step-copy">
+                    <strong>时间轴回溯</strong>
+                    <span>用红黄便利贴标记卡点和亮点，复原启动、策略、交互、视觉、美化PPT过程中的关键瞬间。</span>
+                    <div class="upload-box" data-upload-box="photo">
+                      <input class="upload-input" id="upload-step-7" type="file" multiple accept="image/*">
+                      <label class="upload-button" for="upload-step-7">上传照片</label>
+                      <span class="upload-hint">支持多张现场照片</span>
+                      <ul class="upload-list photo-list" aria-label="第 7 项上传照片"></ul>
+                    </div>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-no">8</span>
+                  <div class="step-copy">
+                    <strong>深度研讨分析</strong>
+                    <span>围绕数据、协作、资产三类问题追问根因，避免停留在表象。</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-no">9</span>
+                  <div class="step-copy">
+                    <strong>总结与改进</strong>
+                    <span>把讨论结果转化成具体改进清单，筛选重要且可落地的事项。</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-no">10</span>
+                  <div class="step-copy">
+                    <strong>行动项确认</strong>
+                    <span>现场确认 What、Who、When、How，并录入《复盘行动项追踪表》。</span>
+                    <div class="upload-box" data-upload-box="doc">
+                      <input class="upload-input" id="upload-step-10" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.csv,.pdf,.md,.markdown,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,text/markdown,text/plain">
+                      <label class="upload-button" for="upload-step-10">上传文档</label>
+                      <span class="upload-hint">支持多份 Word / Excel / PDF / MD</span>
+                      <ul class="upload-list" aria-label="第 10 项上传文档"></ul>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </article>
+
+            <article class="phase">
+              <div class="phase-title">
+                <h3>第三阶段：会后沉淀</h3>
+                <span class="phase-window">1 周内</span>
+              </div>
+              <ul>
+                <li>
+                  <span class="step-no">11</span>
+                  <div class="step-copy">
+                    <strong>整理复盘报告</strong>
+                    <span>会议结束后 2 天内完成报告，并同步给参会人员和相关领导。</span>
+                    <div class="upload-box" data-upload-box="doc">
+                      <input class="upload-input" id="upload-step-11" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.csv,.pdf,.md,.markdown,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,text/markdown,text/plain">
+                      <label class="upload-button" for="upload-step-11">上传文档</label>
+                      <span class="upload-hint">支持多份 Word / Excel / PDF / MD</span>
+                      <ul class="upload-list" aria-label="第 11 项上传文档"></ul>
+                    </div>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-no">12</span>
+                  <div class="step-copy">
+                    <strong>跟进行动项</strong>
+                    <span>将追踪表放入共享空间，定期提醒负责人推进，保证改进落地。</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="step-no">13</span>
+                  <div class="step-copy">
+                    <strong>知识资产归档</strong>
+                    <span>沉淀洞察、组件、模板，并插入团队项目管理表，方便后续项目复用。</span>
+                  </div>
+                </li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="agenda">
+        <div class="container">
+          <div class="section-head section-head-single">
+            <div>
+              <h2>周五会议议程</h2>
+              <p class="section-note">建议按 60-90 分钟版本执行，核心节奏是先统一事实，再让每个人把关键瞬间讲出来，最后把问题转成下一次项目能使用的机制；若讨论充分但行动项未确认，优先压缩发散讨论，保留最后 15-20 分钟做闭环。</p>
+            </div>
+          </div>
+
+          <div class="agenda">
+            <div class="agenda-row">
+              <div class="agenda-time">17:00-17:05</div>
+              <div class="agenda-topic">
+                <strong>开场与规则确认</strong>
+                <span>重申复盘目的、会议流程、发言方式和输出标准。</span>
+              </div>
+              <div class="agenda-owner">PM</div>
+            </div>
+            <div class="agenda-row">
+              <div class="agenda-time">17:05-17:20</div>
+              <div class="agenda-topic">
+                <strong>事实回顾</strong>
+                <span>项目数据晾晒，包括工时投入、里程碑偏差、问卷看板。</span>
+              </div>
+              <div class="agenda-owner">PM</div>
+            </div>
+            <div class="agenda-row">
+              <div class="agenda-time">17:20-17:40</div>
+              <div class="agenda-topic">
+                <strong>时间轴回溯</strong>
+                <span>全员使用红黄便利贴分享关键瞬间，还原项目真实情境。</span>
+              </div>
+              <div class="agenda-owner">全员</div>
+            </div>
+            <div class="agenda-row">
+              <div class="agenda-time">17:40-18:10</div>
+              <div class="agenda-topic">
+                <strong>深度研讨</strong>
+                <span>围绕数据、协作、资产追问根因，确认哪些问题值得进入改进清单。</span>
+              </div>
+              <div class="agenda-owner">全员</div>
+            </div>
+            <div class="agenda-row">
+              <div class="agenda-time">18:10-18:30</div>
+              <div class="agenda-topic">
+                <strong>总结与行动闭环</strong>
+                <span>形成改进清单，明确负责人、时间点、验收标准和追踪位置。</span>
+              </div>
+              <div class="agenda-owner">全员</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="method">
+        <div class="container">
+          <div class="section-head section-head-single">
+            <div>
+              <h2>现场方法</h2>
+              <p class="section-note">用“时间轴过电影”让团队从抽象评价回到具体场景，再用根因讨论把场景转为流程改进；PM 的关键作用不是给答案，而是持续把发言拉回事实、原因、下一次怎么做。</p>
+            </div>
+          </div>
+
+          <div class="two-col">
+            <article class="method-block">
+              <h3>会前检查清单</h3>
+              <ul class="checklist interactive-checklist">
+                <li>
+                  <label class="task-label">
+                    <input class="task-checkbox" type="checkbox">
+                    <span class="task-box"></span>
+                    <span class="task-text">项目目标：范围、时间、预算、质量目标。</span>
+                  </label>
+                </li>
+                <li>
+                  <label class="task-label">
+                    <input class="task-checkbox" type="checkbox">
+                    <span class="task-box"></span>
+                    <span class="task-text">工时数据：各成员、各阶段实际投入 vs 计划投入。</span>
+                  </label>
+                </li>
+                <li>
+                  <label class="task-label">
+                    <input class="task-checkbox" type="checkbox">
+                    <span class="task-box"></span>
+                    <span class="task-text">进度数据：每个里程碑提前、准时、延期及延期天数。</span>
+                  </label>
+                </li>
+                <li>
+                  <label class="task-label">
+                    <input class="task-checkbox" type="checkbox">
+                    <span class="task-box"></span>
+                    <span class="task-text">问卷结果：亮点、痛点、建议三类信息看板。</span>
+                  </label>
+                </li>
+                <li>
+                  <label class="task-label">
+                    <input class="task-checkbox" type="checkbox">
+                    <span class="task-box"></span>
+                    <span class="task-text">现场物料：白纸或白板、红黄便利贴、记号笔。</span>
+                  </label>
+                </li>
+              </ul>
+            </article>
+
+            <article class="method-block">
+              <h3>时间轴操作</h3>
+              <ul class="checklist">
+                <li><span class="box"></span><span>在墙面或白板画横向时间轴，标注启动、策略、交互、视觉、美化PPT。</span></li>
+                <li><span class="box"></span><span>每人领取红黄便利贴各 5 张，红色记录卡点，黄色记录亮点。</span></li>
+                <li><span class="box"></span><span>每人 5 分钟独立回忆，一个便签只写一件事，贴到对应阶段。</span></li>
+                <li><span class="box"></span><span>轮流走到时间轴前说明便签，PM 记录高频问题和关键原因。</span></li>
+                <li><span class="box"></span><span>追问两个问题：当时为什么会这样？如果回到那天会怎么改？</span></li>
+              </ul>
+            </article>
+          </div>
+
+          <div class="sticky-flow" aria-label="便利贴分类">
+            <div class="sticky red">
+              <strong>红色：卡点/痛点</strong>
+              <p>记录项目中阻塞、反复、返工、沟通成本高或决策不清的瞬间。</p>
+            </div>
+            <div class="sticky yellow">
+              <strong>黄色：亮点/成功</strong>
+              <p>记录推进顺畅、配合有效、客户反馈好、资产可复用的瞬间。</p>
+            </div>
+            <div class="sticky blue">
+              <strong>蓝色：转化为行动</strong>
+              <p>把高频事件归并为流程、模板、机制、协作方式上的改进动作。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="discussion">
+        <div class="container">
+          <div class="section-head section-head-single">
+            <div>
+              <h2>深度研讨框架</h2>
+              <p class="section-note">建议把讨论分成三条线，避免大家只围绕某一个明显事件反复打转；每条线都用“事实表现、根本原因、下一次机制”来收束，保证最后能进入行动项追踪表。</p>
+            </div>
+          </div>
+
+          <div class="discussion-grid">
+            <article class="discussion">
+              <h3>数据线</h3>
+              <p>哪些阶段工时超出预期？里程碑为什么偏差？计划颗粒度、评估方式、风险预警是否足够？</p>
+            </article>
+            <article class="discussion">
+              <h3>协作线</h3>
+              <p>角色边界是否清晰？客户沟通、内部评审、设计决策记录是否及时？跨角色协同时哪里最消耗？</p>
+            </article>
+            <article class="discussion">
+              <h3>资产线</h3>
+              <p>哪些模板、组件、汇报材料可以沉淀？哪些经验需要进入团队知识库，成为下个项目的默认输入？</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="actions">
+        <div class="container">
+          <div class="section-head section-head-single">
+            <div>
+              <h2>行动项追踪表</h2>
+              <p class="section-note">复盘的价值最终落在行动项。下方内容为参考示意，现场可直接投屏填写，后期也可上传正式追踪表，避免会后凭记忆补录。</p>
+            </div>
+          </div>
+
+          <div class="action-upload">
+            <div class="upload-box" data-upload-box="doc">
+              <input class="upload-input" id="upload-actions" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.csv,.pdf,.md,.markdown,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,text/markdown,text/plain">
+              <label class="upload-button" for="upload-actions">上传正式追踪表</label>
+              <span class="upload-hint">支持多份 Word / Excel / PDF / MD，上传后可点击预览</span>
+              <ul class="upload-list" aria-label="行动项追踪表上传文档"></ul>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>痛点/机会</th>
+                  <th>行动内容 What</th>
+                  <th>负责人 Who</th>
+                  <th>截止时间 When</th>
+                  <th>验收标准 How</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>客户汇报材料临时整理，复用度不足</td>
+                  <td>制定客户汇报材料模板，沉淀 POC 场景中的结构和示例页</td>
+                  <td>会议现场确认</td>
+                  <td>会后 1 周内</td>
+                  <td>模板发布到知识库，并在下个项目试用</td>
+                  <td>
+                    <select class="status-select" data-state="待确认" aria-label="状态">
+                      <option>待执行</option>
+                      <option selected>待确认</option>
+                      <option>待归档</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <td>关键设计决策缺少统一记录</td>
+                  <td>建立设计决策记录表，记录背景、方案、取舍和最终结论</td>
+                  <td>会议现场确认</td>
+                  <td>会后 1 周内</td>
+                  <td>形成可复制表格，纳入项目管理表</td>
+                  <td>
+                    <select class="status-select" data-state="待确认" aria-label="状态">
+                      <option>待执行</option>
+                      <option selected>待确认</option>
+                      <option>待归档</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <td>项目组件、模板、洞察沉淀不集中</td>
+                  <td>归档本次 POC 的组件、模板、洞察，并补充检索链接</td>
+                  <td>会议现场确认</td>
+                  <td>报告完成前</td>
+                  <td>所有资产链接进入三组项目管理表</td>
+                  <td>
+                    <select class="status-select" data-state="待归档" aria-label="状态">
+                      <option>待执行</option>
+                      <option>待确认</option>
+                      <option selected>待归档</option>
+                    </select>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="resources">
+        <div class="container">
+          <div class="resource-band">
+            <div>
+              <h2>资料链接</h2>
+              <p>会前收集、会中追踪、会后归档所需文档集中在这里，便于会议现场快速打开。</p>
+            </div>
+            <ul class="link-list">
+              <li>
+                <span class="dot"></span>
+                <span><a href="https://alidocs.dingtalk.com/api/doc/transit?dentryUuid=vy20BglGWOZvXaoXIGkODLBn8A7depqY&amp;queryString=utm_medium%3Ddingdoc_doc_plugin_card%26utm_source%3Ddingdoc_doc" target="_blank" rel="noreferrer">项目复盘信息收集表</a></span>
+              </li>
+              <li>
+                <span class="dot"></span>
+                <span><a href="https://alidocs.dingtalk.com/i/nodes/6LeBq413JAK7YroYfrGk6dkkWDOnGvpb?doc_type=wiki_doc&amp;iframeQuery=anchorId%3DX02mm1t6izyd71h86cupvd&amp;rnd=0.9210561672006661" target="_blank" rel="noreferrer">复盘行动项追踪表（模板）</a></span>
+              </li>
+              <li>
+                <span class="dot"></span>
+                <span><a href="https://alidocs.dingtalk.com/api/doc/transit?dentryUuid=dpYLaezmVNz4kZoktmqqAolyVrMqPxX6&amp;queryString=utm_medium%3Ddingdoc_doc_plugin_card%26utm_source%3Ddingdoc_doc" target="_blank" rel="noreferrer">项目复盘报告（模板）</a></span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <p>来源：项目复盘流程-利安人寿POC.md。整理目标：用于 2026 年 6 月 5 日项目复盘会的会前准备、现场推进与会后沉淀。</p>
+      </div>
+    </footer>
+  </div>
+  <div class="preview-layer" id="file-preview" hidden>
+    <div class="preview-dialog" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+      <div class="preview-head">
+        <div class="preview-title" id="preview-title">文件预览</div>
+        <div class="preview-actions">
+          <a class="preview-open" id="preview-open" href="#" target="_blank" rel="noreferrer">新窗口打开</a>
+          <button class="preview-close" id="preview-close" type="button" aria-label="关闭预览">×</button>
+        </div>
+      </div>
+      <div class="preview-body" id="preview-body"></div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const docExtensions = new Set(["doc", "docx", "xls", "xlsx", "csv", "pdf", "md", "markdown"]);
+      const imageExtensions = new Set(["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "heic", "heif"]);
+      const objectUrls = [];
+      const previewLayer = document.querySelector("#file-preview");
+      const previewTitle = document.querySelector("#preview-title");
+      const previewOpen = document.querySelector("#preview-open");
+      const previewBody = document.querySelector("#preview-body");
+      const previewClose = document.querySelector("#preview-close");
+
+      const getExtension = (file) => {
+        const parts = file.name.toLowerCase().split(".");
+        return parts.length > 1 ? parts.pop() : "";
+      };
+
+      const formatSize = (bytes) => {
+        if (bytes < 1024 * 1024) {
+          return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+        }
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      };
+
+      const truncateName = (name, maxLength = 15) => {
+        const chars = Array.from(name);
+        return chars.length > maxLength ? `${chars.slice(0, maxLength).join("")}...` : name;
+      };
+
+      const createUrl = (file) => {
+        const extension = getExtension(file);
+        const source = extension === "md" || extension === "markdown"
+          ? new Blob([file], { type: "text/plain" })
+          : file;
+        const url = URL.createObjectURL(source);
+        objectUrls.push(url);
+        return url;
+      };
+
+      const showPreview = (file, url) => {
+        const extension = getExtension(file);
+        previewTitle.textContent = file.name;
+        previewOpen.href = url;
+        previewBody.replaceChildren();
+
+        if (file.type.startsWith("image/") || imageExtensions.has(extension)) {
+          const image = document.createElement("img");
+          image.src = url;
+          image.alt = file.name;
+          previewBody.append(image);
+        } else if (extension === "md" || extension === "markdown" || extension === "csv" || file.type.startsWith("text/")) {
+          const reader = new FileReader();
+          const textPreview = document.createElement("pre");
+          textPreview.className = "preview-text";
+          textPreview.textContent = "正在读取文件...";
+          previewBody.append(textPreview);
+          reader.addEventListener("load", () => {
+            textPreview.textContent = reader.result || "";
+          });
+          reader.readAsText(file);
+        } else {
+          const frame = document.createElement("iframe");
+          frame.src = url;
+          frame.title = file.name;
+          previewBody.append(frame);
+        }
+
+        previewLayer.hidden = false;
+      };
+
+      const hidePreview = () => {
+        previewLayer.hidden = true;
+        previewBody.replaceChildren();
+      };
+
+      const deleteUpload = (item, url) => {
+        if (!previewLayer.hidden && previewOpen.href === url) {
+          hidePreview();
+        }
+        URL.revokeObjectURL(url);
+        item.remove();
+      };
+
+      const createDeleteButton = (item, file, url, label = "×") => {
+        const button = document.createElement("button");
+        button.className = "delete-upload";
+        button.type = "button";
+        button.textContent = label;
+        button.setAttribute("aria-label", `删除 ${file.name}`);
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const shouldDelete = window.confirm(`确认删除“${file.name}”吗？`);
+          if (!shouldDelete) {
+            return;
+          }
+          deleteUpload(item, url);
+        });
+        return button;
+      };
+
+      const appendDocument = (list, file) => {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        const name = document.createElement("span");
+        const meta = document.createElement("span");
+        const url = createUrl(file);
+        const deleteButton = createDeleteButton(item, file, url);
+
+        item.className = "upload-item";
+        link.className = "upload-link";
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        link.title = `点击预览 ${file.name}`;
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          showPreview(file, url);
+        });
+
+        name.className = "file-name";
+        name.textContent = truncateName(file.name);
+        name.title = file.name;
+        meta.className = "file-meta";
+        meta.textContent = formatSize(file.size);
+
+        link.append(name, meta);
+        item.append(link, deleteButton);
+        list.append(item);
+      };
+
+      const appendPhoto = (list, file) => {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        const image = document.createElement("img");
+        const name = document.createElement("span");
+        const url = createUrl(file);
+        const deleteButton = createDeleteButton(item, file, url, "×");
+
+        item.className = "upload-item";
+        link.className = "photo-card";
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        link.title = `点击预览 ${file.name}`;
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          showPreview(file, url);
+        });
+        image.src = url;
+        image.alt = file.name;
+        name.textContent = truncateName(file.name);
+        name.title = file.name;
+
+        link.append(image, name);
+        item.append(link, deleteButton);
+        list.append(item);
+      };
+
+      document.querySelectorAll(".upload-box").forEach((box) => {
+        const input = box.querySelector("input[type='file']");
+        const list = box.querySelector(".upload-list");
+        const type = box.dataset.uploadBox;
+
+        input.addEventListener("change", () => {
+          const files = Array.from(input.files || []);
+          const invalidFiles = [];
+
+          files.forEach((file) => {
+            const extension = getExtension(file);
+            const isValidDoc = type === "doc" && docExtensions.has(extension);
+            const isValidPhoto = type === "photo" && (file.type.startsWith("image/") || imageExtensions.has(extension));
+
+            if (isValidDoc) {
+              appendDocument(list, file);
+              return;
+            }
+
+            if (isValidPhoto) {
+              appendPhoto(list, file);
+              return;
+            }
+
+            invalidFiles.push(file.name);
+          });
+
+          if (invalidFiles.length) {
+            alert(`以下文件格式暂不支持：\n${invalidFiles.join("\n")}`);
+          }
+
+          input.value = "";
+        });
+      });
+
+      document.querySelectorAll(".status-select").forEach((select) => {
+        select.dataset.state = select.value;
+        select.addEventListener("change", () => {
+          select.dataset.state = select.value;
+        });
+      });
+
+      previewClose.addEventListener("click", hidePreview);
+      previewLayer.addEventListener("click", (event) => {
+        if (event.target === previewLayer) {
+          hidePreview();
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !previewLayer.hidden) {
+          hidePreview();
+        }
+      });
+
+      window.addEventListener("beforeunload", () => {
+        objectUrls.forEach((url) => URL.revokeObjectURL(url));
+      });
+    })();
+  </script>
+</body>
+</html>
