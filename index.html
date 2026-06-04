@@ -444,6 +444,18 @@
       background: #d4ebe7;
     }
 
+    .link-button {
+      margin-left: 8px;
+      border-color: rgba(45, 95, 154, 0.3);
+      color: var(--blue);
+      background: #f5f8fb;
+    }
+
+    .link-button:hover {
+      border-color: rgba(45, 95, 154, 0.56);
+      background: #e9f1f9;
+    }
+
     .upload-hint {
       display: block;
       margin: 8px 0 0;
@@ -554,6 +566,11 @@
       color: var(--muted);
       font-size: 12px;
       line-height: 1.35;
+    }
+
+    .link-meta {
+      color: var(--blue);
+      font-weight: 800;
     }
 
     .photo-list {
@@ -1754,6 +1771,17 @@
         return file.type.startsWith("image/") || imageExtensions.has(extension);
       };
 
+      const normalizeDingTalkUrl = (value) => {
+        try {
+          const url = new URL(value.trim());
+          const isHttp = url.protocol === "https:" || url.protocol === "http:";
+          const isDingTalkDoc = url.hostname === "alidocs.dingtalk.com";
+          return isHttp && isDingTalkDoc ? url.href : "";
+        } catch (error) {
+          return "";
+        }
+      };
+
       const createLocalRecord = (file, stepId, type) => {
         const extension = getExtension(file);
         const source = extension === "md" || extension === "markdown"
@@ -1771,9 +1799,23 @@
           url,
           downloadUrl: url,
           sourceFile: file,
+          objectUrl: true,
           isRemote: false
         };
       };
+
+      const createLocalLinkRecord = (url, title, stepId) => ({
+        id: `${stepId}-link-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name: title || "钉钉文档链接",
+        size: 0,
+        mimeType: "text/uri-list",
+        stepId,
+        type: "link",
+        kind: "link",
+        url,
+        downloadUrl: url,
+        isRemote: false
+      });
 
       const normalizeRemoteFile = (file) => ({
         id: file.id || file.path,
@@ -1782,6 +1824,7 @@
         mimeType: file.mimeType || file.mimetype || "application/octet-stream",
         stepId: file.stepId,
         type: file.type,
+        kind: file.kind || (file.type === "link" ? "link" : "file"),
         path: file.path,
         url: file.url || file.signedUrl || file.downloadUrl,
         downloadUrl: file.downloadUrl || file.url || file.signedUrl,
@@ -1829,6 +1872,9 @@
         if (response.status === 415) {
           return "文件格式不支持，请上传 Word、Excel、PDF、MD 或图片。";
         }
+        if (response.status === 422) {
+          return detail || "请输入有效的钉钉文档链接。";
+        }
         if (response.status === 400) {
           return `${action}目标异常，请刷新页面后重试。`;
         }
@@ -1839,12 +1885,13 @@
       };
 
       const setBoxBusy = (box, busy) => {
-        const button = box.querySelector(".upload-button");
-        if (!button) {
-          return;
-        }
-        button.style.opacity = busy ? "0.58" : "";
-        button.style.pointerEvents = busy ? "none" : "";
+        box.querySelectorAll(".upload-button").forEach((button) => {
+          button.style.opacity = busy ? "0.58" : "";
+          button.style.pointerEvents = busy ? "none" : "";
+          if (button.tagName === "BUTTON") {
+            button.disabled = busy;
+          }
+        });
       };
 
       const showPreview = async (fileRecord) => {
@@ -1924,7 +1971,9 @@
             return;
           }
         } else {
-          URL.revokeObjectURL(fileRecord.url);
+          if (fileRecord.objectUrl) {
+            URL.revokeObjectURL(fileRecord.url);
+          }
         }
 
         item.remove();
@@ -1977,6 +2026,31 @@
         list.append(item);
       };
 
+      const renderDingLink = (list, fileRecord) => {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        const name = document.createElement("span");
+        const meta = document.createElement("span");
+        const deleteButton = createDeleteButton(item, fileRecord);
+
+        item.className = "upload-item";
+        link.className = "upload-link";
+        link.href = fileRecord.url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        link.title = `打开 ${fileRecord.name}`;
+
+        name.className = "file-name";
+        name.textContent = truncateName(fileRecord.name);
+        name.title = fileRecord.name;
+        meta.className = "file-meta link-meta";
+        meta.textContent = "链接";
+
+        link.append(name, meta);
+        item.append(link, deleteButton);
+        list.append(item);
+      };
+
       const renderPhoto = (list, fileRecord) => {
         const item = document.createElement("li");
         const link = document.createElement("a");
@@ -2011,7 +2085,9 @@
         }
 
         const list = box.querySelector(".upload-list");
-        if (fileRecord.type === "photo") {
+        if (fileRecord.kind === "link" || fileRecord.type === "link") {
+          renderDingLink(list, fileRecord);
+        } else if (fileRecord.type === "photo") {
           renderPhoto(list, fileRecord);
         } else {
           renderDocument(list, fileRecord);
@@ -2061,17 +2137,97 @@
         renderFile(normalizeRemoteFile(data.file));
       };
 
+      const uploadRemoteLink = async (url, title, stepId, type, password) => {
+        const formData = new FormData();
+        formData.append("kind", "link");
+        formData.append("password", password);
+        formData.append("pageId", storageConfig.pageId);
+        formData.append("stepId", stepId);
+        formData.append("type", type);
+        formData.append("url", url);
+        formData.append("title", title);
+
+        const response = await fetch(storageConfig.functionUrl, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            clearUploadPassword();
+          }
+          throw new Error(await getRemoteErrorMessage(response, "添加链接"));
+        }
+
+        const data = await response.json();
+        renderFile(normalizeRemoteFile(data.file));
+      };
+
+      const addDingTalkLink = async (box, stepId, type) => {
+        const rawUrl = window.prompt("粘贴钉钉文档链接");
+        if (rawUrl === null) {
+          return;
+        }
+
+        const url = normalizeDingTalkUrl(rawUrl);
+        if (!url) {
+          alert("请输入 alidocs.dingtalk.com 开头的钉钉文档链接。");
+          return;
+        }
+
+        const rawTitle = window.prompt("链接名称", "钉钉文档链接");
+        if (rawTitle === null) {
+          return;
+        }
+        const title = rawTitle.trim() || "钉钉文档链接";
+
+        if (isRemoteStorageEnabled) {
+          const password = getUploadPassword();
+          if (!password) {
+            return;
+          }
+
+          setBoxBusy(box, true);
+          try {
+            await uploadRemoteLink(url, title, stepId, type, password);
+          } catch (error) {
+            console.error(error);
+            alert(error?.message || "添加链接失败，请稍后重试。");
+          } finally {
+            setBoxBusy(box, false);
+          }
+        } else {
+          const list = box.querySelector(".upload-list");
+          renderDingLink(list, createLocalLinkRecord(url, title, stepId));
+        }
+      };
+
       document.querySelectorAll(".upload-box").forEach((box) => {
         const input = box.querySelector("input[type='file']");
         const list = box.querySelector(".upload-list");
         const type = box.dataset.uploadBox;
         const stepId = getStepId(input);
+        const uploadLabel = box.querySelector(".upload-button");
+        const linkButton = document.createElement("button");
+        const hint = box.querySelector(".upload-hint");
         uploadBoxes.set(stepId, box);
 
+        linkButton.className = "upload-button link-button";
+        linkButton.type = "button";
+        linkButton.textContent = "添加钉钉链接";
+        uploadLabel.insertAdjacentElement("afterend", linkButton);
+
+        if (hint && !hint.textContent.includes("钉钉链接")) {
+          hint.textContent = `${hint.textContent} / 钉钉链接`;
+        }
+
         if (!isRemoteStorageEnabled) {
-          const hint = box.querySelector(".upload-hint");
           hint.textContent = `${hint.textContent}（服务器未配置，当前仅本地临时预览）`;
         }
+
+        linkButton.addEventListener("click", () => {
+          addDingTalkLink(box, stepId, type);
+        });
 
         input.addEventListener("change", async () => {
           const files = Array.from(input.files || []);
