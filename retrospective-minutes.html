@@ -144,16 +144,17 @@
     .hero-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 8px;
     }
 
     .button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 42px;
-      padding: 9px 14px;
+      min-height: 36px;
+      padding: 7px 12px;
       border-radius: 8px;
+      font-size: 14px;
       font-weight: 850;
     }
 
@@ -235,10 +236,8 @@
     }
 
     .section-head {
-      display: grid;
-      grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr);
-      gap: 30px;
-      align-items: start;
+      display: block;
+      max-width: 860px;
       margin-bottom: 26px;
     }
 
@@ -250,6 +249,7 @@
 
     .section-note {
       margin: 0;
+      max-width: 780px;
       color: var(--muted);
       font-size: 17px;
     }
@@ -261,11 +261,11 @@
     }
 
     .grid-2 {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: 1fr;
     }
 
     .grid-3 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: 1fr;
     }
 
     .card {
@@ -359,7 +359,7 @@
 
     .role-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: 1fr;
       gap: 16px;
     }
 
@@ -397,11 +397,7 @@
     }
 
     @media (max-width: 900px) {
-      .hero-inner,
-      .section-head,
-      .grid-2,
-      .grid-3,
-      .role-grid {
+      .hero-inner {
         grid-template-columns: 1fr;
       }
 
@@ -442,6 +438,7 @@
           <p class="lead">围绕项目启动、策略共创、交互、视觉、PPT包装和协作节奏进行完整复盘，把事实、问题、角色经验和行动项沉淀为下一次 POC 的可执行机制。</p>
           <div class="hero-actions">
             <a class="button primary" href="#actions">查看行动项</a>
+            <a class="button primary" href="lian-poc-retrospective-minutes.md" download="利安人寿APP改版项目POC复盘纪要.md">查看完整纪要文档</a>
             <a class="button secondary" href="index.html">返回复盘工作台</a>
           </div>
         </div>
