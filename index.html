@@ -456,6 +456,10 @@
       background: #e9f1f9;
     }
 
+    .upload-box > .link-button:first-child {
+      margin-left: 0;
+    }
+
     .upload-hint {
       display: block;
       margin: 8px 0 0;
@@ -1347,11 +1351,9 @@
                   <div class="step-copy">
                     <strong>事实回顾</strong>
                     <span>展示项目数据和问卷看板，让所有人先对客观事实形成统一认知。</span>
-                    <div class="upload-box" data-upload-box="doc">
-                      <input class="upload-input" id="upload-step-6" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.csv,.pdf,.md,.markdown,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,text/markdown,text/plain">
-                      <label class="upload-button" for="upload-step-6">上传文档</label>
-                      <span class="upload-hint">支持多份 Word / Excel / PDF / MD</span>
-                      <ul class="upload-list" aria-label="第 6 项上传文档"></ul>
+                    <div class="upload-box" data-upload-box="doc" data-step-id="step-6">
+                      <span class="upload-hint">支持添加钉钉链接</span>
+                      <ul class="upload-list" aria-label="第 6 项钉钉链接"></ul>
                     </div>
                   </div>
                 </li>
@@ -1756,7 +1758,13 @@
         return chars.length > maxLength ? `${chars.slice(0, maxLength).join("")}...` : name;
       };
 
-      const getStepId = (input) => {
+      const getStepId = (box, input) => {
+        if (box.dataset.stepId) {
+          return box.dataset.stepId;
+        }
+        if (!input) {
+          return "";
+        }
         if (input.id === "upload-actions") {
           return "actions";
         }
@@ -2206,28 +2214,39 @@
         const input = box.querySelector("input[type='file']");
         const list = box.querySelector(".upload-list");
         const type = box.dataset.uploadBox;
-        const stepId = getStepId(input);
+        const stepId = getStepId(box, input);
         const uploadLabel = box.querySelector(".upload-button");
         const linkButton = document.createElement("button");
         const hint = box.querySelector(".upload-hint");
+        if (!stepId) {
+          return;
+        }
         uploadBoxes.set(stepId, box);
 
         linkButton.className = "upload-button link-button";
         linkButton.type = "button";
         linkButton.textContent = "添加钉钉链接";
-        uploadLabel.insertAdjacentElement("afterend", linkButton);
+        if (uploadLabel) {
+          uploadLabel.insertAdjacentElement("afterend", linkButton);
+        } else {
+          box.insertBefore(linkButton, hint || list);
+        }
 
         if (hint && !hint.textContent.includes("钉钉链接")) {
           hint.textContent = `${hint.textContent} / 钉钉链接`;
         }
 
-        if (!isRemoteStorageEnabled) {
+        if (!isRemoteStorageEnabled && hint) {
           hint.textContent = `${hint.textContent}（服务器未配置，当前仅本地临时预览）`;
         }
 
         linkButton.addEventListener("click", () => {
           addDingTalkLink(box, stepId, type);
         });
+
+        if (!input) {
+          return;
+        }
 
         input.addEventListener("change", async () => {
           const files = Array.from(input.files || []);
