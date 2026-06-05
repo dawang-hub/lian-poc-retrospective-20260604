@@ -1035,35 +1035,6 @@
       border-radius: var(--radius);
     }
 
-    .status-select {
-      width: 96px;
-      min-height: 34px;
-      padding: 5px 28px 5px 10px;
-      border: 1px solid transparent;
-      border-radius: 999px;
-      color: #76520c;
-      background: var(--amber-soft);
-      font: inherit;
-      font-size: 12px;
-      font-weight: 850;
-      cursor: pointer;
-    }
-
-    .status-select[data-state="待执行"] {
-      color: #76520c;
-      background: var(--amber-soft);
-    }
-
-    .status-select[data-state="待确认"] {
-      color: #2d5f9a;
-      background: var(--blue-soft);
-    }
-
-    .status-select[data-state="待归档"] {
-      color: #0d5855;
-      background: var(--teal-soft);
-    }
-
     .resource-band {
       display: grid;
       grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
@@ -1622,7 +1593,6 @@
                   <th>负责人 Who</th>
                   <th>截止时间 When</th>
                   <th>验收标准 How</th>
-                  <th>状态</th>
                 </tr>
               </thead>
               <tbody>
@@ -1632,13 +1602,6 @@
                   <td>会议现场确认</td>
                   <td>会后 1 周内</td>
                   <td>模板发布到知识库，并在下个项目试用</td>
-                  <td>
-                    <select class="status-select" data-state="待确认" aria-label="状态">
-                      <option>待执行</option>
-                      <option selected>待确认</option>
-                      <option>待归档</option>
-                    </select>
-                  </td>
                 </tr>
                 <tr>
                   <td>关键设计决策缺少统一记录</td>
@@ -1646,13 +1609,6 @@
                   <td>会议现场确认</td>
                   <td>会后 1 周内</td>
                   <td>形成可复制表格，纳入项目管理表</td>
-                  <td>
-                    <select class="status-select" data-state="待确认" aria-label="状态">
-                      <option>待执行</option>
-                      <option selected>待确认</option>
-                      <option>待归档</option>
-                    </select>
-                  </td>
                 </tr>
                 <tr>
                   <td>项目组件、模板、洞察沉淀不集中</td>
@@ -1660,13 +1616,6 @@
                   <td>会议现场确认</td>
                   <td>报告完成前</td>
                   <td>所有资产链接进入三组项目管理表</td>
-                  <td>
-                    <select class="status-select" data-state="待归档" aria-label="状态">
-                      <option>待执行</option>
-                      <option>待确认</option>
-                      <option selected>待归档</option>
-                    </select>
-                  </td>
                 </tr>
               </tbody>
             </table>
@@ -2292,13 +2241,6 @@
           }
 
           input.value = "";
-        });
-      });
-
-      document.querySelectorAll(".status-select").forEach((select) => {
-        select.dataset.state = select.value;
-        select.addEventListener("change", () => {
-          select.dataset.state = select.value;
         });
       });
 
