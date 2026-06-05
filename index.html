@@ -183,29 +183,29 @@
       font-weight: 600;
     }
 
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 26px;
-    }
-
     .primary-action {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 46px;
-      padding: 11px 18px;
-      border-radius: 8px;
+      min-height: 34px;
+      padding: 7px 12px;
+      border-radius: 999px;
       color: #fff;
       background: #20303c;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 850;
-      box-shadow: 0 10px 22px rgba(32, 48, 60, 0.18);
+      box-shadow: 0 8px 18px rgba(32, 48, 60, 0.14);
     }
 
     .primary-action:hover {
       background: #17232d;
+    }
+
+    .principles .principle-action {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
     }
 
     .meeting-panel {
@@ -1183,10 +1183,8 @@
               <li>情境重现</li>
               <li>结论可执行</li>
               <li>沉淀可复用</li>
+              <li class="principle-action"><a class="primary-action" href="retrospective-minutes.html">查看完整复盘纪要</a></li>
             </ul>
-            <div class="hero-actions">
-              <a class="primary-action" href="retrospective-minutes.html">查看完整复盘纪要</a>
-            </div>
           </div>
 
           <aside class="meeting-panel" aria-label="会议信息">
