@@ -183,6 +183,31 @@
       font-weight: 600;
     }
 
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .primary-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 11px 18px;
+      border-radius: 8px;
+      color: #fff;
+      background: #20303c;
+      font-size: 15px;
+      font-weight: 850;
+      box-shadow: 0 10px 22px rgba(32, 48, 60, 0.18);
+    }
+
+    .primary-action:hover {
+      background: #17232d;
+    }
+
     .meeting-panel {
       background: var(--paper);
       border: 1px solid var(--line);
@@ -1008,33 +1033,6 @@
       border-bottom: 0;
     }
 
-    .status {
-      display: inline-flex;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .status.todo {
-      background: var(--amber-soft);
-      color: #76520c;
-    }
-
-    .status.open {
-      background: var(--teal-soft);
-      color: #0d5855;
-    }
-
-    .action-upload {
-      margin: 0 0 18px;
-      padding: 18px;
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-    }
-
     .resource-band {
       display: grid;
       grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
@@ -1186,6 +1184,9 @@
               <li>结论可执行</li>
               <li>沉淀可复用</li>
             </ul>
+            <div class="hero-actions">
+              <a class="primary-action" href="retrospective-minutes.html">查看完整复盘纪要</a>
+            </div>
           </div>
 
           <aside class="meeting-panel" aria-label="会议信息">
@@ -1571,16 +1572,7 @@
           <div class="section-head section-head-single">
             <div>
               <h2>行动项追踪表</h2>
-              <p class="section-note">复盘的价值最终落在行动项。下方内容为参考示意，现场可直接投屏填写，后期也可上传正式追踪表，避免会后凭记忆补录。</p>
-            </div>
-          </div>
-
-          <div class="action-upload">
-            <div class="upload-box" data-upload-box="doc">
-              <input class="upload-input" id="upload-actions" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.csv,.pdf,.md,.markdown,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,text/markdown,text/plain">
-              <label class="upload-button" for="upload-actions">上传正式追踪表</label>
-              <span class="upload-hint">支持多份 Word / Excel / PDF / MD，上传后可点击预览</span>
-              <ul class="upload-list" aria-label="行动项追踪表上传文档"></ul>
+              <p class="section-note">复盘的价值最终落在行动项。下方清单来自完整复盘纪要，可作为后续 POC 项目启动、策略共创、设计表达和团队协同的执行检查项。</p>
             </div>
           </div>
 
@@ -1588,34 +1580,55 @@
             <table>
               <thead>
                 <tr>
-                  <th>痛点/机会</th>
-                  <th>行动内容 What</th>
-                  <th>负责人 Who</th>
-                  <th>截止时间 When</th>
-                  <th>验收标准 How</th>
+                  <th>编号</th>
+                  <th>行动事项</th>
+                  <th>详细描述</th>
+                  <th>责任人</th>
+                  <th>备注</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>客户汇报材料临时整理，复用度不足</td>
-                  <td>制定客户汇报材料模板，沉淀 POC 场景中的结构和示例页</td>
-                  <td>会议现场确认</td>
-                  <td>会后 1 周内</td>
-                  <td>模板发布到知识库，并在下个项目试用</td>
+                  <td>1</td>
+                  <td>POC启动会</td>
+                  <td>对齐项目目标、角色分工、节点安排</td>
+                  <td>冯梦莹</td>
+                  <td>POC启动会清单</td>
                 </tr>
                 <tr>
-                  <td>关键设计决策缺少统一记录</td>
-                  <td>建立设计决策记录表，记录背景、方案、取舍和最终结论</td>
-                  <td>会议现场确认</td>
-                  <td>会后 1 周内</td>
-                  <td>形成可复制表格，纳入项目管理表</td>
+                  <td>2</td>
+                  <td>策略共创会</td>
+                  <td>基于理念共创和对齐项目目标与策略，可采用部分视觉工作坊方式</td>
+                  <td>冯梦莹</td>
+                  <td>策略共创模板</td>
                 </tr>
                 <tr>
-                  <td>项目组件、模板、洞察沉淀不集中</td>
-                  <td>归档本次 POC 的组件、模板、洞察，并补充检索链接</td>
-                  <td>会议现场确认</td>
-                  <td>报告完成前</td>
-                  <td>所有资产链接进入三组项目管理表</td>
+                  <td>3</td>
+                  <td>制定《POC节奏检查表》</td>
+                  <td>每次启动前确认当前阶段，避免一次性压任务</td>
+                  <td>冯梦莹</td>
+                  <td>POC节奏检查表</td>
+                </tr>
+                <tr>
+                  <td>4</td>
+                  <td>PPT编写群策群力</td>
+                  <td>最终汇总PPT框架和逻辑时共同共创，而非各自为战</td>
+                  <td>冯梦莹</td>
+                  <td>PPT叙事骨架模板</td>
+                </tr>
+                <tr>
+                  <td>5</td>
+                  <td>梳理视觉主线和思路</td>
+                  <td>视觉设计执行前先梳理视觉方向、表达主线和内核</td>
+                  <td>杜妍</td>
+                  <td>视觉主线梳理模板、AI生图方法文档</td>
+                </tr>
+                <tr>
+                  <td>6</td>
+                  <td>交互表现形式探索学习</td>
+                  <td>从业务架构思考延伸到创新交互布局，增强客户惊喜感</td>
+                  <td>房昱锟</td>
+                  <td>交互表现形式案例库、惊喜感自检表</td>
                 </tr>
               </tbody>
             </table>
@@ -1709,9 +1722,6 @@
         }
         if (!input) {
           return "";
-        }
-        if (input.id === "upload-actions") {
-          return "actions";
         }
         return input.id.replace("upload-step-", "step-");
       };
