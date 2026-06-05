@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>利安人寿APP改版项目POC复盘纪要</title>
+  <style>
+    :root {
+      --ink: #17212b;
+      --muted: #5c6873;
+      --line: #d9e0da;
+      --paper: #ffffff;
+      --wash: #f5f7f4;
+      --teal: #126d6a;
+      --navy: #20303c;
+      --blue: #2d5f9a;
+      --amber: #b88213;
+      --radius: 8px;
+      --shadow: 0 18px 42px rgba(23, 33, 43, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--wash);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255, 255, 255, 0.9);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+    }
+
+    .topbar-inner {
+      width: min(1180px, calc(100% - 32px));
+      min-height: 60px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand {
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .nav a {
+      min-height: 34px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .nav a:hover {
+      color: var(--ink);
+      background: rgba(23, 33, 43, 0.06);
+    }
+
+    .hero {
+      background:
+        linear-gradient(90deg, rgba(18, 109, 106, 0.08), rgba(255, 255, 255, 0) 42%),
+        linear-gradient(180deg, #ffffff 0%, #f5f7f4 100%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-inner {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 58px 0 44px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.75fr);
+      gap: 42px;
+      align-items: end;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      color: var(--teal);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 2px;
+      background: var(--teal);
+      border-radius: 999px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 820px;
+      margin-bottom: 18px;
+      font-size: clamp(36px, 5vw, 64px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 780px;
+      margin-bottom: 24px;
+      color: #394651;
+      font-size: 19px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-weight: 850;
+    }
+
+    .button.primary {
+      color: #fff;
+      background: var(--navy);
+      box-shadow: 0 10px 22px rgba(32, 48, 60, 0.18);
+    }
+
+    .button.secondary {
+      color: var(--teal);
+      background: #e1f0ec;
+      border: 1px solid rgba(18, 109, 106, 0.28);
+    }
+
+    .info-panel {
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .info-head {
+      padding: 20px 22px;
+      color: #fff;
+      background: var(--navy);
+    }
+
+    .info-head strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .info-head span {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 14px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .info-cell {
+      min-height: 96px;
+      padding: 17px 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    .info-cell:nth-child(odd) {
+      border-right: 1px solid var(--line);
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .value {
+      display: block;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    section {
+      padding: 54px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr);
+      gap: 30px;
+      align-items: start;
+      margin-bottom: 26px;
+    }
+
+    .section-head h2 {
+      margin-bottom: 10px;
+      font-size: clamp(30px, 4vw, 44px);
+      line-height: 1.12;
+    }
+
+    .section-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .grid-2,
+    .grid-3 {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .card {
+      padding: 20px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .card h3 {
+      margin-bottom: 10px;
+      font-size: 20px;
+    }
+
+    .card p,
+    .card li {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .accent-teal {
+      border-top: 4px solid var(--teal);
+    }
+
+    .accent-blue {
+      border-top: 4px solid var(--blue);
+    }
+
+    .accent-amber {
+      border-top: 4px solid var(--amber);
+    }
+
+    .quote {
+      padding: 22px 24px;
+      color: #fff;
+      background: var(--navy);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .quote p {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 750;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    table {
+      width: 100%;
+      min-width: 820px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      background: #eef2ee;
+      color: #273744;
+      font-weight: 850;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .number-list {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .number-list li + li {
+      margin-top: 8px;
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .role-card {
+      display: grid;
+      gap: 14px;
+      padding: 20px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .role-card h3 {
+      margin: 0;
+    }
+
+    .role-block strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--teal);
+    }
+
+    .role-block ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer {
+      padding: 28px 0;
+      color: var(--muted);
+      background: #fff;
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .hero-inner,
+      .section-head,
+      .grid-2,
+      .grid-3,
+      .role-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-inner {
+        padding-top: 40px;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .info-cell:nth-child(odd) {
+        border-right: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">利安人寿 POC 复盘</a>
+      <nav class="nav" aria-label="纪要导航">
+        <a href="#summary">总体结论</a>
+        <a href="#result">结果回顾</a>
+        <a href="#issues">问题原因</a>
+        <a href="#roles">角色复盘</a>
+        <a href="#actions">行动项</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div class="hero-inner">
+        <div>
+          <p class="eyebrow">完整复盘纪要</p>
+          <h1>利安人寿APP改版项目POC复盘纪要</h1>
+          <p class="lead">围绕项目启动、策略共创、交互、视觉、PPT包装和协作节奏进行完整复盘，把事实、问题、角色经验和行动项沉淀为下一次 POC 的可执行机制。</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#actions">查看行动项</a>
+            <a class="button secondary" href="index.html">返回复盘工作台</a>
+          </div>
+        </div>
+        <aside class="info-panel" aria-label="纪要信息">
+          <div class="info-head">
+            <strong>2026.06.05</strong>
+            <span>依据录音转写、信息收集表、行动项追踪表和项目 POC 复盘表整理。</span>
+          </div>
+          <div class="info-grid">
+            <div class="info-cell">
+              <span class="label">项目名称</span>
+              <span class="value">利安人寿APP改版POC</span>
+            </div>
+            <div class="info-cell">
+              <span class="label">客户</span>
+              <span class="value">利安人寿</span>
+            </div>
+            <div class="info-cell">
+              <span class="label">核心角色</span>
+              <span class="value">冯梦莹、杜妍、房昱锟</span>
+            </div>
+            <div class="info-cell">
+              <span class="label">项目成员</span>
+              <span class="value">冯欣诚、覃彦涛</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <section id="goal">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>复盘目标</h2>
+          </div>
+          <p class="section-note">本次复盘不只评价最终产出，更关注流程亮点、协作问题、角色能力短板和可复用方法，形成后续 POC 项目可执行的流程机制与行动项。</p>
+        </div>
+        <div class="grid-2">
+          <article class="card accent-teal">
+            <h3>关注问题</h3>
+            <ol class="number-list">
+              <li>POC项目启动、策略、交互、视觉、PPT包装各环节是否顺畅。</li>
+              <li>团队首次磨合POC过程中，哪些协作方式有效，哪些造成反复和焦虑。</li>
+              <li>交互与视觉如何更早参与策略共创，减少后期理解断层。</li>
+              <li>后续如何以机制化方式提升POC效率、表达质量和团队协同。</li>
+            </ol>
+          </article>
+          <article class="quote">
+            <p>本次复盘的核心不是追责，而是把项目中的事实、关键瞬间与团队经验转化为下一次可复用的流程资产。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="summary">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>总体结论</h2>
+          </div>
+          <p class="section-note">项目最终产出质量整体达标，但过程消耗较高，核心问题在于团队尚未形成稳定的 POC 工作节奏。</p>
+        </div>
+        <div class="grid-3">
+          <article class="card accent-teal">
+            <h3>结果可接受</h3>
+            <p>团队对客户需求、业务背景和方案方向理解较准确，最终方案在策略、视觉呈现和PPT表达上具备一定创新性和完整性。</p>
+          </article>
+          <article class="card accent-amber">
+            <h3>过程代价偏高</h3>
+            <p>前期策略共创、交互视觉主线统一、PPT表达框架和POC节奏控制存在明显磨合问题。</p>
+          </article>
+          <article class="card accent-blue">
+            <h3>机制需要固化</h3>
+            <p>后续需要将“先定主线，再做页面；先共创表达，再分工执行”固化为 POC 项目机制。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="result">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>项目结果回顾</h2>
+          </div>
+          <p class="section-note">最终方案处于及格以上水平，但完整性相对偏弱，反映出表达结构、方案叙事和细节整合仍有改进空间。</p>
+        </div>
+        <div class="grid-2">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>评价项</th>
+                  <th>结果</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>总得分</td><td>4.52</td></tr>
+                <tr><td>设计质量</td><td>4.7</td></tr>
+                <tr><td>专业性</td><td>4.5</td></tr>
+                <tr><td>创新性</td><td>4.6</td></tr>
+                <tr><td>完整性</td><td>4.4</td></tr>
+                <tr><td>合理性</td><td>4.5</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>成员</th>
+                  <th>预算工时</th>
+                  <th>实际工时</th>
+                  <th>偏差</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>冯梦莹</td><td>16小时</td><td>32小时</td><td>超出16小时</td></tr>
+                <tr><td>杜妍</td><td>56小时</td><td>87小时</td><td>超出31小时</td></tr>
+                <tr><td>房昱锟</td><td>32小时</td><td>40小时</td><td>超出8小时</td></tr>
+                <tr><td>冯欣诚</td><td>24小时</td><td>24小时</td><td>持平</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div style="height:16px"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>项目</th>
+                <th>预期</th>
+                <th>实际</th>
+                <th>偏差</th>
+                <th>主要原因</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>人力成本</td>
+                <td>21,350元</td>
+                <td>31,287元</td>
+                <td>超出9,937元</td>
+                <td>前期策略和设计主线未充分对齐、视觉方向多次试错、PPT表达框架反复调整、团队首次POC协作节奏不稳定。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="good">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>做得好的地方</h2>
+          </div>
+          <p class="section-note">本次项目仍沉淀出启动、需求理解、视觉打磨、PPT收尾和方法复用方面的有效经验。</p>
+        </div>
+        <div class="grid-3">
+          <article class="card"><h3>启动与定期对齐有效</h3><p>启动会帮助团队对项目目标、背景、分工和节点完成基础对齐，定期碰头也帮助维持方向一致。</p></article>
+          <article class="card"><h3>需求理解较准确</h3><p>团队对业务范围、用户需求和整体方案方向的判断基本有效，项目过程中大方向没有发生颠覆性调整。</p></article>
+          <article class="card"><h3>方案打磨后提升明显</h3><p>视觉方案经过多轮指导和调整后，整体质感和高级感提升，团队也理解到优秀设计需要克制、聚焦和围绕核心概念展开。</p></article>
+          <article class="card"><h3>PPT规范提升收尾效率</h3><p>后期包装阶段提前明确页面规范和整体风格，减少不必要的质感追求，使收尾效率有所提升。</p></article>
+          <article class="card"><h3>形成可复用经验</h3><p>沉淀出 POC启动会、节奏检查表、交互方案分析流程、AI生图稳定方法和视觉表达前置方法。</p></article>
+          <article class="card"><h3>团队有复盘意识</h3><p>成员愿意把项目过程中的反复、焦虑和协作问题拉到台面讨论，为后续机制化改进提供了基础。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="issues">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>主要问题与原因</h2>
+          </div>
+          <p class="section-note">问题集中在策略共创不足、过早进入细节、PPT表达后置、交互惊喜感不足、视觉主线不清和负责人输出节奏过密。</p>
+        </div>
+        <div class="grid-2">
+          <article class="card accent-teal">
+            <h3>策略共创不足</h3>
+            <p>交互和视觉更多在既有框架中执行，知道“要做什么”，但未充分理解“为什么这样做”以及如何把理念转化为交互和视觉表达。</p>
+          </article>
+          <article class="card accent-blue">
+            <h3>缺少先定主线</h3>
+            <p>视觉和交互前期过早进入页面和细节，没有先理清故事、关键词、视觉路线和交互表达方式，降低了效率。</p>
+          </article>
+          <article class="card accent-amber">
+            <h3>PPT框架反复</h3>
+            <p>客户需要看到完整、可理解、能解决业务问题的方案。最终PPT框架没有在策略阶段共同规划，导致后期重新整合。</p>
+          </article>
+          <article class="card accent-teal">
+            <h3>交互表达缺少惊喜感</h3>
+            <p>交互侧更关注业务内容放置，较少关注内容如何以更有吸引力、更有记忆点的方式呈现，也限制了后续视觉表达。</p>
+          </article>
+          <article class="card accent-blue">
+            <h3>视觉前期缺少项目灵魂</h3>
+            <p>视觉设计没有在策略阶段充分阅读客户资料、品牌文化和业务理念，也没有拆解出稳定的视觉关键词、情绪、材质和路线。</p>
+          </article>
+          <article class="card accent-amber">
+            <h3>一次性输出过多</h3>
+            <p>负责人前期输出信息量较大，成员吸收困难，进一步加剧焦虑和反复，暴露出团队能力摸底和节奏检查机制不足。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="roles">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>角色复盘</h2>
+          </div>
+          <p class="section-note">角色复盘聚焦各自做得好的地方、未达预期和后续改进方式。</p>
+        </div>
+        <div class="role-grid">
+          <article class="role-card">
+            <h3>冯梦莹</h3>
+            <div class="role-block"><strong>做得好的地方</strong><ul><li>需求理解和快速响应能力强。</li><li>对POC阶段重点展示内容有较强判断。</li><li>能根据反馈快速调整方案方向和PPT表达。</li></ul></div>
+            <div class="role-block"><strong>未达预期</strong><ul><li>整体POC节奏把控和设计师引导不足。</li><li>视觉反馈不够果断，部分问题延后暴露。</li><li>前期输出节奏和信息量没有很好适配成员。</li></ul></div>
+            <div class="role-block"><strong>后续改进</strong><ul><li>控制一次性输出量，采用阶段化任务分配。</li><li>反馈采用“2条总体感受 + 1条必须改问题 + 1条可选建议”。</li><li>启动前组织团队回答擅长、踩坑、反馈偏好三问。</li></ul></div>
+          </article>
+          <article class="role-card">
+            <h3>杜妍</h3>
+            <div class="role-block"><strong>做得好的地方</strong><ul><li>能听取建议并快速调整视觉方案。</li><li>打磨过程中掌握更克制、更高级的页面处理方法。</li><li>找到一套AI生图稳定方法。</li></ul></div>
+            <div class="role-block"><strong>未达预期</strong><ul><li>前期过早进入页面执行，设计效率较低。</li><li>对启动页和AI动效理解不够深入。</li><li>没有充分阅读客户资料并提炼视觉主线。</li></ul></div>
+            <div class="role-block"><strong>后续改进</strong><ul><li>先阅读客户资料、品牌文化和项目理念。</li><li>执行前梳理关键词、情绪、视觉路线和核心故事。</li><li>从执行者切换为共同策划者，主动参与策略共创。</li></ul></div>
+          </article>
+          <article class="role-card">
+            <h3>房昱锟</h3>
+            <div class="role-block"><strong>做得好的地方</strong><ul><li>对业务范围和用户需求理解准确。</li><li>整体交互方案方向稳定。</li><li>沉淀了POC交互方案分析流程。</li></ul></div>
+            <div class="role-block"><strong>未达预期</strong><ul><li>交互框架和表现形式较普通。</li><li>内容表现和设计亮点包装不足。</li><li>PPT表达和案例包装耗时较多。</li></ul></div>
+            <div class="role-block"><strong>后续改进</strong><ul><li>加强前瞻产品、同类产品和创新交互样式沉淀。</li><li>输出后增加“惊喜感自检”。</li><li>从客户语言出发表达方案，先讲痛点和业务价值。</li></ul></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="process">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>流程沉淀</h2>
+          </div>
+          <p class="section-note">流程沉淀的重点是把启动、策略共创、交互视觉主线、PPT叙事和节奏检查固化成下一次项目的默认动作。</p>
+        </div>
+        <div class="grid-2">
+          <article class="card"><h3>POC启动会标准化</h3><p>启动会应对齐项目背景、客户目标、核心业务痛点、POC目标、展示重点、时间节点、预算工时、角色分工、协作方式和项目阶段产出重点。</p></article>
+          <article class="card"><h3>策略共创前置到第一天</h3><p>负责人给出初步理念和方向，交互、视觉共同阅读客户资料并参与拆解，产出核心理念、业务痛点、交互策略、视觉策略、关键词和PPT叙事主线。</p></article>
+          <article class="card"><h3>同步定义表达主线</h3><p>交互和视觉应在策略阶段同步确认如何体现策略、哪些页面承担记忆点、哪些设计细节服务业务价值、哪些表现形式能带来客户惊喜感。</p></article>
+          <article class="card"><h3>PPT框架共同完成</h3><p>最终PPT不是交互稿和视觉稿的简单汇总，而是面向客户的完整方案叙事，建议先共同完成一版叙事骨架。</p></article>
+          <article class="card"><h3>建立POC节奏检查表</h3><p>每次进入下一阶段前，团队先确认当前处于哪个阶段，避免在策略阶段做详细设计，或在详细设计前才补策略。</p></article>
+          <article class="card"><h3>检查节点</h3><p>启动前看背景、目标、工时、分工；策略前看客户资料；设计前看理念、关键词、交互策略、视觉策略；PPT前看叙事主线和页面框架。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="actions">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>行动项追踪</h2>
+          </div>
+          <p class="section-note">以下行动项需要进入后续项目启动流程，避免作为一次性总结停留。</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>编号</th>
+                <th>行动事项</th>
+                <th>详细描述</th>
+                <th>责任人</th>
+                <th>建议产出</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>POC启动会</td><td>对齐项目目标、角色分工、节点安排</td><td>冯梦莹</td><td>POC启动会清单</td></tr>
+              <tr><td>2</td><td>策略共创会</td><td>基于理念共创和对齐项目目标与策略，可采用部分视觉工作坊方式</td><td>冯梦莹</td><td>策略共创模板</td></tr>
+              <tr><td>3</td><td>制定《POC节奏检查表》</td><td>每次启动前确认当前阶段，避免一次性压任务</td><td>冯梦莹</td><td>POC节奏检查表</td></tr>
+              <tr><td>4</td><td>PPT编写群策群力</td><td>最终汇总PPT框架和逻辑时共同共创，而非各自为战</td><td>冯梦莹</td><td>PPT叙事骨架模板</td></tr>
+              <tr><td>5</td><td>梳理视觉主线和思路</td><td>视觉设计执行前先梳理视觉方向、表达主线和内核</td><td>杜妍</td><td>视觉主线梳理模板、AI生图方法文档</td></tr>
+              <tr><td>6</td><td>交互表现形式探索学习</td><td>从业务架构思考延伸到创新交互布局，增强客户惊喜感</td><td>房昱锟</td><td>交互表现形式案例库、惊喜感自检表</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="next">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>后续建议与关键共识</h2>
+          </div>
+          <p class="section-note">POC项目不是详细设计项目，核心目标是用有限时间建立客户信任、展示方案想法和形成记忆点。</p>
+        </div>
+        <div class="grid-2">
+          <article class="card accent-teal">
+            <h3>后续建议</h3>
+            <ol class="number-list">
+              <li>将复盘行动项纳入团队下一个POC项目的启动流程。</li>
+              <li>下一次POC开始前，用1小时进行团队能力轻摸底。</li>
+              <li>建立策略、交互、视觉、PPT表达四张模板。</li>
+              <li>时间越紧，越需要先用半天到一天理清主线。</li>
+              <li>将“客户能记住什么”作为POC质量判断标准之一。</li>
+            </ol>
+          </article>
+          <article class="quote">
+            <p>下一次POC应遵循：先共创策略，再定义交互和视觉路线；先搭建客户能理解的故事，再进入页面细节；先统一目标和节奏，再分工执行。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>来源：利安人寿APP改版项目POC复盘纪要.md。整理日期：2026年6月5日。</p>
+    </div>
+  </footer>
+</body>
+</html>
